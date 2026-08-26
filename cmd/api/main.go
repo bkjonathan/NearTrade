@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bkjonathan/NearTrade/internal/config"
+	"github.com/bkjonathan/NearTrade/internal/handlers"
 )
 
 // shutdownTimeout bounds how long in-flight requests get to finish after
@@ -21,11 +22,7 @@ func main() {
 	Config := config.MustLoadConfig()
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
-	})
+	mux.HandleFunc("GET /healthz", handlers.Health)
 
 	srv := &http.Server{
 		Addr:         ":" + Config.Port,
