@@ -1,0 +1,41 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: neartrade-api:latest
+    restart: unless-stopped
+
+    environment:
+      # Coolify magic variable: generates/attaches a domain and routes it to
+      # port 8090. Remove this line when running locally with plain compose.
+      - SERVICE_FQDN_API_8090
+      - PORT=8090
+      - ENV=production
+      - TZ=UTC
+
+    # Not `ports:` — Coolify's proxy reaches the container over its own
+    # network. Uncomment the ports block below for local runs.
+    expose:
+      - "8090"
+    # ports:
+    #   - "8090:8090"
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/healthz"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+    # Must exceed shutdownTimeout in cmd/api/main.go so draining can finish.
+    stop_grace_period: 30s
+
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

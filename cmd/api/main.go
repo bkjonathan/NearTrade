@@ -1,12 +1,21 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/bkjonathan/NearTrade/internal/config"
 )
+
+// shutdownTimeout bounds how long in-flight requests get to finish after
+// SIGTERM. Keep it under the orchestrator's kill grace period (Docker: 10s
+// by default, raised to 30s in docker-compose.yml).
+const shutdownTimeout = 15 * time.Second
 
 func main() {
 	Config := config.MustLoadConfig()
@@ -26,9 +35,25 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Printf("Starting server on port %s\n", Config.Port)
+	// Registered before the server starts so a fast redeploy can't miss the signal.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	go func() {
+		log.Printf("Starting server on port %s (env=%s)", Config.Port, Config.Env)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("Shutdown signal received, draining connections...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Graceful shutdown failed: %v", err)
 	}
+	log.Println("Server stopped cleanly")
 }

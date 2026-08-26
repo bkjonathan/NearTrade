@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+	"io/fs"
 	"log"
 	"os"
 
@@ -13,7 +15,9 @@ type Config struct {
 }
 
 func MustLoadConfig() *Config {
-	if err := godotenv.Load(); err != nil {
+	// .env is a local-dev convenience. In containers the platform injects the
+	// environment directly, so a missing file is expected, not an error.
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 	return &Config{

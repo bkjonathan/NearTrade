@@ -1,0 +1,15 @@
+# Deny-by-default: nothing enters the build context unless allow-listed below.
+# This guarantees .env, bin/, and .git can never leak into an image layer.
+*
+
+# --- build inputs (add new top-level source dirs here) ---
+!go.mod
+!go.sum
+!cmd/
+!internal/
+
+# Re-exclude junk that could live inside the allow-listed dirs.
+**/*_test.go
+**/testdata/
+**/*.md
+**/.DS_Store
