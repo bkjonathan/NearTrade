@@ -34,7 +34,7 @@ func main() {
 			log.Fatalf("Failed to run migration up: %v", err)
 		}
 	case "down":
-		if err := m.Down(); err != nil {
+		if err := m.Steps(-1); err != nil {
 			log.Fatalf("Failed to run migration down: %v", err)
 		}
 	default:
