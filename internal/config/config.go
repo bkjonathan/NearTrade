@@ -10,8 +10,9 @@ import (
 )
 
 type Config struct {
-	Port string
-	Env  string
+	Port        string
+	Env         string
+	DatabaseURL string
 }
 
 func MustLoadConfig() *Config {
@@ -21,8 +22,9 @@ func MustLoadConfig() *Config {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 	return &Config{
-		Port: getEnv("PORT", "8090"),
-		Env:  getEnv("ENV", "development"),
+		Port:        getEnv("PORT", "8090"),
+		DatabaseURL: getEnv("DATABASE_URL", ""),
+		Env:         getEnv("ENV", "development"),
 	}
 }
 
